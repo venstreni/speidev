@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPEI.DEV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --off-white: #f2f0eb;
+      --paper: #ede9e1;
+      --ink: #111111;
+      --mid: #888880;
+      --rule: #c8c4bc;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--off-white);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 128px 128px;
+      pointer-events: none; z-index: 1000; opacity: 0.6;
+    }
+
+    /* ─── GRID ─── */
+    .grid {
+      display: grid;
+      grid-template-columns: 48px 1fr 1fr 1fr 48px;
+      min-height: 100vh;
+      position: relative;
+    }
+    .v-rule { border-right: 1px solid var(--rule); grid-row: 1 / -1; }
+    .v-rule-right { border-left: 1px solid var(--rule); grid-row: 1 / -1; }
+
+    /* ─── ENTRANCE ─── */
+    .wordmark {
+      font-size: clamp(52px, 9vw, 112px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 0.9;
+      cursor: crosshair;
+    }
+    .wordmark .c-word { display: block; overflow: hidden; }
+    .wordmark .c-word span {
+      display: block;
+      transform: translateY(110%);
+      transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .wordmark.go .c-word:nth-child(1) span { transform: translateY(0); transition-delay: 0.05s; }
+    .wordmark.go .c-word:nth-child(2) span { transform: translateY(0); transition-delay: 0.2s; }
+
+    /* subtle letter-spacing breathe on wordmark hover */
+    .wordmark:hover .c-word span {
+      letter-spacing: 0.01em;
+      transition: letter-spacing 0.7s cubic-bezier(0.16,1,0.3,1), transform 1s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .wordmark-meta {
+      font-size: 10px; font-weight: 300;
+      letter-spacing: 0.14em; color: var(--mid);
+      text-transform: uppercase; text-align: right; line-height: 2;
+      opacity: 0; transition: opacity 0.9s ease 0.7s;
+    }
+    .wordmark-meta.go { opacity: 1; }
+    .wordmark-meta span { display: block; }
+
+    /* ─── HEADER ─── */
+    header {
+      grid-column: 2 / 5;
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: end;
+      padding: 40px 0 20px; gap: 24px;
+      position: relative;
+    }
+    header::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px; background: var(--ink);
+      transform-origin: left; transform: scaleX(0);
+      transition: transform 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.25s;
+    }
+    header.go::after { transform: scaleX(1); }
+
+    /* ─── STATUS BAR ─── */
+    .status-bar {
+      grid-column: 2 / 5;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mid);
+      opacity: 0; transition: opacity 0.8s ease 1s;
+    }
+    .status-bar.go { opacity: 1; }
+
+    .status-dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--ink); margin-right: 8px;
+      animation: breatheDot 3.2s ease-in-out infinite;
+    }
+    @keyframes breatheDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.2; transform: scale(0.75); }
+    }
+
+    /* timestamp micro-flicker */
+    #ts { transition: opacity 0.07s ease; }
+    #ts.blink { opacity: 0.3; }
+
+    /* ─── MAIN ─── */
+    main {
+      grid-column: 2 / 5;
+      display: grid; grid-template-columns: 1fr 1px 1fr;
+    }
+    .col-divider { background: var(--rule); }
+    .col-left { padding: 60px 40px 60px 0; }
+    .col-right { padding: 60px 0 60px 40px; }
+
+    .section-label {
+      font-size: 8px; font-weight: 400;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--mid); margin-bottom: 20px;
+      border-top: 1px solid var(--rule); padding-top: 10px;
+    }
+
+    /* ─── HERO STATEMENT: per-line clip reveal ─── */
+    .hero-statement {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 300; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 48px;
+    }
+    .hero-statement em { font-style: italic; font-weight: 300; }
+    .hero-line { display: block; overflow: hidden; }
+    .hero-line span {
+      display: block;
+      transform: translateY(100%);
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .hero-statement.go .hero-line:nth-child(1) span { transform: translateY(0); transition-delay: 0s; }
+    .hero-statement.go .hero-line:nth-child(2) span { transform: translateY(0); transition-delay: 0.09s; }
+    .hero-statement.go .hero-line:nth-child(3) span { transform: translateY(0); transition-delay: 0.18s; }
+    .hero-statement.go .hero-line:nth-child(4) span { transform: translateY(0); transition-delay: 0.27s; }
+
+    /* ─── SCROLL REVEAL ─── */
+    .sr {
+      opacity: 0; transform: translateY(14px);
+      transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.85s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sr.go { opacity: 1; transform: translateY(0); }
+
+    /* ─── QUOTE ─── */
+    .quote-block {
+      border-left: 2px solid var(--ink); padding-left: 20px;
+      margin-bottom: 48px;
+      transition: border-color 0.5s ease;
+    }
+    .quote-block:hover { border-color: var(--rule); }
+    .quote-block p {
+      font-size: 11px; font-weight: 300;
+      line-height: 1.9; color: var(--mid); letter-spacing: 0.04em;
+    }
+    .quote-mark {
+      font-size: 48px; font-weight: 700; color: var(--rule);
+      line-height: 1; display: block; margin-bottom: -12px;
+    }
+
+    /* ─── TAGS ─── */
+    .tag {
+      display: inline-block;
+      font-size: 8px; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      border: 1px solid var(--ink);
+      padding: 3px 8px; margin-right: 6px; margin-bottom: 6px;
+      cursor: default;
+      transition: background 0.35s ease, color 0.35s ease, transform 0.35s ease;
+    }
+    .tag:hover { background: var(--ink); color: var(--off-white); transform: translateY(-1px); }
+    .tag-row { margin-bottom: 48px; }
+
+    /* tag stagger set by JS */
+
+    /* ─── DATA TABLE ─── */
+    .data-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 10px; letter-spacing: 0.08em; margin-bottom: 40px;
+    }
+    .data-table tr { border-top: 1px solid var(--rule); }
+    .data-table tr:last-child { border-bottom: 1px solid var(--rule); }
+    .data-table td { padding: 10px 0; vertical-align: top; transition: color 0.3s ease; }
+    .data-table tr:hover td { color: var(--ink); }
+    .data-table td:first-child {
+      color: var(--mid); text-transform: uppercase;
+      letter-spacing: 0.16em; font-size: 8px;
+      width: 40%; padding-right: 12px;
+    }
+
+    /* ─── METRICS ─── */
+    .metric-row {
+      display: flex; align-items: baseline; justify-content: space-between;
+      border-top: 1px solid var(--rule); padding: 14px 0;
+      transition: padding-left 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .metric-row:last-child { border-bottom: 1px solid var(--rule); }
+    .metric-row:hover { padding-left: 8px; }
+    .metric-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mid); }
+    .metric-value { font-size: 28px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+    .metric-unit { font-size: 9px; font-weight: 300; letter-spacing: 0.1em; color: var(--mid); margin-left: 4px; }
+
+    /* ─── DECO NUMBER ─── */
+    .deco-number {
+      font-size: clamp(80px, 14vw, 180px); font-weight: 700;
+      color: var(--paper); line-height: 0.85; letter-spacing: -0.06em;
+      pointer-events: none; user-select: none; display: block; margin-bottom: 24px;
+      animation: floatY 9s ease-in-out infinite;
+    }
+    @keyframes floatY {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    /* ─── WATERMARK ─── */
+    .watermark-text {
+      position: fixed; bottom: 80px; right: -60px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--rule); transform: rotate(-90deg);
+      transform-origin: right center; white-space: nowrap;
+      pointer-events: none; z-index: 0;
+      animation: wmBreathe 7s ease-in-out infinite;
+    }
+    @keyframes wmBreathe {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ─── CURSOR CROSSHAIR ─── */
+    .cur {
+      position: fixed; pointer-events: none; z-index: 999;
+      background: var(--rule); opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .cur-h { left: 0; right: 0; height: 1px; }
+    .cur-v { top: 0; bottom: 0; width: 1px; }
+    body.cursor-active .cur { opacity: 1; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      grid-column: 2 / 5;
+      border-top: 1px solid var(--ink);
+      padding: 20px 0 40px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      align-items: start; gap: 24px;
+    }
+    .footer-block { font-size: 9px; letter-spacing: 0.12em; color: var(--mid); line-height: 2; }
+    .footer-block strong {
+      display: block; font-size: 8px; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--ink); margin-bottom: 8px;
+    }
+    .footer-center { text-align: center; }
+    .footer-right { text-align: right; }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 20px 1fr 20px; }
+      header, .status-bar, main, footer { grid-column: 2 / 3; }
+      header { grid-template-columns: 1fr; }
+      main { grid-template-columns: 1fr; }
+      .col-divider { display: none; }
+      .col-left { padding: 40px 0; }
+      .col-right { padding: 0 0 40px; }
+      footer { grid-template-columns: 1fr; }
+      .footer-center, .footer-right { text-align: left; }
+      .v-rule, .v-rule-right { display: none; }
+      .cur { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cur cur-h" id="curH"></div>
+<div class="cur cur-v" id="curV"></div>
+
+<div class="grid">
+  <div class="v-rule"></div>
+
+  <header id="hdr">
+    <div class="wordmark" id="wm">
+      <span class="c-word"><span>SPEI</span></span>
+      <span class="c-word"><span>.DEV</span></span>
+    </div>
+    <div class="wordmark-meta" id="wmMeta">
+      <span>Est. 2025</span>
+      <span>Pittsburgh, PA</span>
+      <span>v 0.1.0</span>
+      <span>Placeholder</span>
+    </div>
+  </header>
+
+  <div class="status-bar" id="sb">
+    <span><span class="status-dot"></span>Under Construction</span>
+    <span>spei.dev — all systems nominal</span>
+    <span id="ts">—</span>
+  </div>
+
+  <main>
+    <div class="col-left">
+
+      <div class="sr">
+        <p class="section-label">// Statement</p>
+        <div class="hero-statement" id="hero">
+          <span class="hero-line"><span>Something</span></span>
+          <span class="hero-line"><span>is</span></span>
+          <span class="hero-line"><span><em>being built</em></span></span>
+          <span class="hero-line"><span>here.</span></span>
+        </div>
+      </div>
+
+      <div class="sr">
+        <div class="quote-block">
+          <span class="quote-mark">"</span>
+          <p>The space between the<br/>idea and the thing<br/>is where the work lives.</p>
+        </div>
+      </div>
+
+      <div class="sr">
+        <div class="tag-row" id="tagRow">
+          <span class="tag">Software</span>
+          <span class="tag">Systems</span>
+          <span class="tag">Design</span>
+          <span class="tag">Hardware</span>
+          <span class="tag">Infrastructure</span>
+        </div>
+      </div>
+
+      <div class="sr">
+        <table class="data-table">
+          <tr><td>Domain</td><td>spei.dev</td></tr>
+          <tr><td>Status</td><td>Pre-launch</td></tr>
+          <tr><td>Location</td><td>Pittsburgh, PA — USA</td></tr>
+          <tr><td>Contact</td><td>— available soon —</td></tr>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="col-divider"></div>
+
+    <div class="col-right">
+
+      <div class="sr">
+        <span class="deco-number">01</span>
+      </div>
+
+      <div class="sr">
+        <p class="section-label">// Progress</p>
+        <div class="metric-row">
+          <span class="metric-label">Concept</span>
+          <span><span class="metric-value" id="countEl">0</span><span class="metric-unit">%</span></span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Architecture</span>
+          <span class="metric-value">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Build</span>
+          <span class="metric-value">—</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Deploy</span>
+          <span class="metric-value">—</span>
+        </div>
+      </div>
+
+      <div class="sr" style="margin-top:40px">
+        <p class="section-label">// Coordinates</p>
+        <table class="data-table">
+          <tr><td>Lat</td><td>40.4406° N</td></tr>
+          <tr><td>Long</td><td>79.9959° W</td></tr>
+          <tr><td>TZ</td><td>America/New_York</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="sr">
+    <div class="footer-block">
+      <strong>Spei.dev</strong>
+      All rights reserved<br/>
+      © 2025–<span id="yr">2025</span>
+    </div>
+    <div class="footer-block footer-center">
+      <strong>Status</strong>
+      Work in progress<br/>Check back soon
+    </div>
+    <div class="footer-block footer-right">
+      <strong>Built in</strong>
+      Pittsburgh, PA<br/>United States
+    </div>
+  </footer>
+
+  <div class="v-rule-right"></div>
+</div>
+
+<div class="watermark-text">SPEI · DEV · 2025 · PITTSBURGH</div>
+
+<script>
+  // ── ENTRANCE ──
+  const $ = id => document.getElementById(id);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      $('wm').classList.add('go');
+      $('hdr').classList.add('go');
+    }, 100);
+    setTimeout(() => $('wmMeta').classList.add('go'), 500);
+    setTimeout(() => $('sb').classList.add('go'), 850);
+    // hero is above fold, trigger it
+    setTimeout(() => $('hero').classList.add('go'), 700);
+  });
+
+  // ── SCROLL REVEAL ──
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      el.classList.add('go');
+      // hero inside?
+      const h = el.querySelector('.hero-statement');
+      if (h) h.classList.add('go');
+      // count-up inside?
+      if (el.contains($('countEl'))) startCount();
+      io.unobserve(el);
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.sr').forEach(el => io.observe(el));
+
+  // ── TAGS stagger ──
+  document.querySelectorAll('.tag').forEach((t, i) => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateY(8px)';
+    t.style.transition = `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s, background 0.35s ease, color 0.35s ease`;
+  });
+  const tagIo = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.querySelectorAll('.tag').forEach(t => {
+        t.style.opacity = '1';
+        t.style.transform = 'translateY(0)';
+      });
+      tagIo.unobserve(e.target);
+    });
+  }, { threshold: 0.3 });
+  const tagRow = $('tagRow');
+  if (tagRow) tagIo.observe(tagRow);
+
+  // ── COUNT-UP ──
+  let counted = false;
+  function startCount() {
+    if (counted) return;
+    counted = true;
+    const el = $('countEl');
+    const target = 100, dur = 1500;
+    const start = performance.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    function frame(now) {
+      const p = Math.min((now - start) / dur, 1);
+      el.textContent = Math.round(ease(p) * target);
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ── TIMESTAMP with micro-flicker ──
+  const tsEl = $('ts');
+  function tick() {
+    tsEl.classList.add('blink');
+    setTimeout(() => {
+      const n = new Date();
+      const p = v => String(v).padStart(2, '0');
+      tsEl.textContent = `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} EST`;
+      tsEl.classList.remove('blink');
+    }, 70);
+  }
+  tick();
+  setInterval(tick, 1000);
+  $('yr').textContent = new Date().getFullYear();
+
+  // ── CURSOR CROSSHAIR ──
+  const curH = $('curH'), curV = $('curV');
+  let raf;
+  document.addEventListener('mousemove', e => {
+    cancelAnimationFrame(raf);
+    document.body.classList.add('cursor-active');
+    raf = requestAnimationFrame(() => {
+      curH.style.transform = `translateY(${e.clientY}px)`;
+      curV.style.transform = `translateX(${e.clientX}px)`;
+    });
+  });
+  document.addEventListener('mouseleave', () => {
+    document.body.classList.remove('cursor-active');
+  });
+</script>
+</body>
+</html>
